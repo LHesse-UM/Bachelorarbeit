@@ -15,28 +15,19 @@ for i in range(1, 21):  # Für jede der 20 Matrizen
         name = f"Matrix{i}_Wert{j}"
         headers.append(name)
 headers.append("Timestamp")
-headers.append("Label")  # Füge das Label am Ende hinzu
+headers.append("Label")
 messung = 0
 matrixN = 0
 matritzen = []
 
 #headers = ["M00 ","M01 ","M02 ","M03 ","M04 ","M05 ","M06 ","M07 ","M10 ","M11 ","M12 ","M13 ","M14 ","M15 ","M16 ","M17 ","M20 ","M21 ","M22 ","M23 ","M24 ","M25 ","M26 ","M27 ","M30 ","M31 ","M32 ","M33 ","M34 ","M35 ","M36 ","M37 ","M40 ","M41 ","M42 ","M43 ","M44 ","M45 ","M46 ","M47 ","M50 ","M51 ","M52 ","M53 ","M54 ","M55 ","M56 ","M57 ","M60 ","M61 ","M62 ","M63 ","M64 ","M65 ","M66 ","M67 ","M70 ","M71 ","M72 ","M73 ","M74 ","M75 ","M76 ","M77 ", "Timestamp", "Label", "Feature", "q25", "median", "q75"] #, "1zu2", "2zu3", "3zu4", "4zu5", "5zu6", "6zu7", "7zu8", "1zu3", "2zu4", "3zu5", "4zu6", "5zu7", "6zu8", "1zu4", "2zu5", "3zu6", "4zu7", "5zu8", "1zu5", "2zu6", "3zu7", "4zu8"]
 print(len(headers))
+
+# Erstellen der CSV-Datei
 with open('test.csv', 'w', newline='') as file:
                            writer = csv.writer(file)
                            writer.writerow(headers)
 
-def shift_array(arr, num, fill_value=np.nan):
-    result = np.empty_like(arr, dtype=np.float64)
-    if num > 0:
-        result[:num] = fill_value
-        result[num:] = arr[:-num]
-    elif num < 0:
-        result[num:] = fill_value
-        result[:num] = arr[-num:]
-    else:
-        result[:] = arr
-    return result
 # Funktionzum Auslesen der Sensordaten
 def get_sensor_data(timestamp):
     sensor_data = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -48,14 +39,10 @@ def get_sensor_data(timestamp):
             global matrixN
             print(messung)
             messung = messung + 1
-            if messung > 0:
-
-
-                  
+            if messung > 0: 
                 value_groups = data.split(";")
                 distances = [int(group.split(",")[0]) if group.split(",")[0] else 0 for group in value_groups]
                 distances = distances[:-1]
-                #print(timestamp)
                 if len(distances) == 64:
                     my_sensor_data = np.array(distances).reshape((8, 8))
                     block_size_x = sensor_data.shape[1] // 8
@@ -64,6 +51,7 @@ def get_sensor_data(timestamp):
                     for i in range(8):
                         for j in range(8):
                             value = my_sensor_data[i, j]
+                            # Störende Werte rausfiltern
                             if value > 2000 or value == 0:
                                 value = 0
                                 my_sensor_data[i, j] = 0
@@ -71,7 +59,7 @@ def get_sensor_data(timestamp):
                             color_value = int(value * 255 / 2000)
                             sensor_data[i*block_size_y:(i+1)*block_size_y, j*block_size_x:(j+1)*block_size_x] = [color_value, color_value, color_value]
                                 
-                            # Textvorbereitung zum Überlagern
+                            # Textvorbereitung für Sensordaten
                             font = cv2.FONT_HERSHEY_SIMPLEX
                             font_scale = 0.5  
                             font_color = (255-color_value, 255-color_value, 255-color_value) 
@@ -79,12 +67,11 @@ def get_sensor_data(timestamp):
 
                             text = f"{value}"
 
-                            # Berechne die Position, an der der Text in den Block eingefügt wird
+                            # Berechnen der Position, an der der Text eingefügt werden soll
                             text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
                             text_x = j * block_size_x + (block_size_x - text_size[0]) // 2
                             text_y = i * block_size_y + (block_size_y + text_size[1]) // 2
 
-                            # Text auf die sensor_data Matrix überlagern
                             cv2.putText(sensor_data, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
                     matritzen.append(my_sensor_data.flatten())
                     # Überprüfe, ob die Queue 20 Matrizen enthält
@@ -92,15 +79,16 @@ def get_sensor_data(timestamp):
                         # Konvertiere die Queue in eine Zeile für die CSV-Datei
                         row = np.concatenate(matritzen).astype(str).tolist()
                         row.append(timestamp)
-                        row.append(0)  # Füge das entsprechende Label hinzu
+                        row.append(0) 
 
-                        # Schreibe die Zeile in die CSV-Datei
+                        # Schreiben der Zeile in die CSV-Datei
                         with open('test.csv', 'a', newline='') as file:
                             writer = csv.writer(file)
                             writer.writerow(row)
 
                         # Entferne die älteste Matrix aus der Queue
                         matritzen.pop(0)
+
                     #q25 = np.percentile(my_sensor_data.flatten(), 25)
                     #median = np.percentile(my_sensor_data.flatten(), 50)
                     #q75 = np.percentile(my_sensor_data.flatten(), 75)
@@ -129,23 +117,25 @@ def get_sensor_data(timestamp):
         
     return sensor_data
 
-# Initialisiere der Kamera
+# Initialisieren der Kamera
 cap = cv2.VideoCapture(1)
 
 while True:
 
     now = datetime.now()
+
+    # Timestamp zum labeln
     timestamp = now.strftime("%H:%M:%S") + ".{:03d}".format(int(now.microsecond / 1000))
 
     ret, camera_frame = cap.read()
     sensor_frame = get_sensor_data(timestamp)
     
 
-    # Füge den Zeitstempel zum Kamerabild hinzu
+    # Einfügen des Timestamps in das Kamerabild
     cv2.putText(camera_frame, timestamp, (10, camera_frame.shape[0] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
     
-    # Füge den Zeitstempel zum Sensordatenbild hinzu
+    # Einfügen des Timestamps in das Sensorbild
     cv2.putText(sensor_frame, timestamp, (10, sensor_frame.shape[0] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
     
@@ -154,7 +144,6 @@ while True:
     
     combined_frame = np.hstack((camera_frame, sensor_frame))
 
-    
     cv2.imshow('Camera and Sensor Data', combined_frame)
     
     if cv2.waitKey(1) & 0xFF == ord('q'):
