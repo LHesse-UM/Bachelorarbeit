@@ -19,6 +19,7 @@ model = load('model.joblib')
 scaler = load('scaler.joblib')
 matritzen = []
 warnings.filterwarnings('ignore')
+
 def get_sensor_data(timestamp):
     sensor_data = np.zeros((480, 640, 3), dtype=np.uint8)
     try:
@@ -51,8 +52,7 @@ def get_sensor_data(timestamp):
                         font_thickness = 1  
 
                         text = f"{value}"
-
-                       
+                        
                         text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
                         text_x = j * block_size_x + (block_size_x - text_size[0]) // 2
                         text_y = i * block_size_y + (block_size_y + text_size[1]) // 2
@@ -87,7 +87,7 @@ def get_sensor_data(timestamp):
         
     return sensor_data
 
-# Initialisiere die Kamera
+# Initialisieren der Kamera
 cap = cv2.VideoCapture(1)
 
 
@@ -98,14 +98,13 @@ while True:
 
     ret, camera_frame = cap.read()
     sensor_frame = get_sensor_data(timestamp)
-    #print(sensor_frame)
     
 
-    # Füge den Zeitstempel zum Kamerabild hinzu
+    #Einfügen des Timestamps in das Kamerabild
     cv2.putText(camera_frame, timestamp, (10, camera_frame.shape[0] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
     
-    # Füge den Zeitstempel zum Sensordatenbild hinzu
+    #Einfügen des Timestamps in das Sensorbild
     cv2.putText(sensor_frame, timestamp, (10, sensor_frame.shape[0] - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
     
