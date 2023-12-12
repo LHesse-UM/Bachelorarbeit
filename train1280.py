@@ -17,10 +17,11 @@ from datetime import datetime
 from joblib import load
 from sklearn.exceptions import DataConversionWarning
 
-
+# Einladen der Trainingsdaten
 data = pd.read_csv('trainingsdaten.csv')
 data['Timestamp'] = pd.to_datetime(data['Timestamp'])
 
+# Überholmanöver Labeln
 time_pairs = [
     ("16:54:32.105", "16:54:33.889"),
     ("16:54:35.068","16:54:37.002"),
@@ -93,11 +94,11 @@ for index, row in data.iterrows():
         if pd.to_datetime(start) <= row['Timestamp'] < pd.to_datetime(end):
             data.at[index, 'Label'] = 1
 
-# Daten für Features und Labels aufteilen
+# Daten in Features und Labels aufteilen
 X = data.iloc[:, :-2].values
 y = data.iloc[:, -1].values
 
-# Daten normalisieren (optional, aber empfohlen)
+# Daten normalisieren
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
@@ -107,7 +108,7 @@ X = X.reshape((-1, 20, 64))  # jede Sequenz hat 20 Zeitschritte und jeder Zeitsc
 # Daten in Trainings- und Testsets aufteilen
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Schritt 2: Modell aufbauen
+# Modell aufbauen
 model = Sequential()
 model.add(LSTM(50, return_sequences=True, input_shape=(20, 64)))  # Anpassen an deine Daten
 model.add(LSTM(50))
@@ -116,8 +117,9 @@ model.add(Dense(1, activation='sigmoid'))  # Sigmoid-Aktivierung für binäre Kl
 # Modell kompilieren
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-# Schritt 3: Modell trainieren
+# Modell trainieren
 model.fit(X_train, y_train, epochs=10, batch_size=64, validation_data=(X_test, y_test))
 
+#Model exportieren
 dump(scaler, 'scaler.joblib')
 dump(model, 'model.joblib')
