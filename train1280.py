@@ -140,9 +140,9 @@ with open(data_path + 'val_data.pkl', 'rb') as file:
 
 print("Daten geladen...")
 
-# Schritt 2: Modell aufbauen
+Modell aufbauen
 model = Sequential()
-model.add(LSTM(50, return_sequences=True, input_shape=(20, 64)))  # Anpassen an deine Daten
+model.add(LSTM(50, return_sequences=True, input_shape=(20, 64))) 
 model.add(LSTM(50))
 model.add(Dense(1, activation='sigmoid'))  # Sigmoid-Aktivierung für binäre Klassifikation
 
@@ -150,7 +150,7 @@ model.add(Dense(1, activation='sigmoid'))  # Sigmoid-Aktivierung für binäre Kl
 print("Starte Training...")
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-# Schritt 3: Modell trainieren
+ Modell trainieren
 model.fit(X_train, y_train, epochs=10, batch_size=64, validation_data=(X_test, y_test))
 
 metrics = model.evaluate(X_test, y_test, return_dict=True)
