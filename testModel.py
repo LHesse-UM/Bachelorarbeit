@@ -14,22 +14,39 @@ import warnings
 from sklearn.exceptions import DataConversionWarning
 
 
+# Dieser Code ist für das Testen des Modells zuständig. 
+# Er ist nahezu äquivalent zu collectData.py, kann jedoch in Echtzeit das Modell testen, anstatt die Daten zu speichern
+
+
+# Aufbau der seriellen Schnittstelle
+# Port und Baudrate ggfs. anpassen
 ser = serial.Serial('COM4', 115200)
+
+
+# Einladen des Modells
 model = load('model.joblib')
 scaler = load('scaler.joblib')
+
+# Variablendefinition
 matritzen = []
+
 warnings.filterwarnings('ignore')
 
 def get_sensor_data(timestamp):
     sensor_data = np.zeros((480, 640, 3), dtype=np.uint8)
     try:
+        # Auslesen der Daten
         data = ser.readline().decode('utf-8').strip()
         if data:
+
+            # Vorverarbeiten der Daten
             value_groups = data.split(";")
             distances = [int(group.split(",")[0]) if group.split(",")[0] else 0 for group in value_groups]
             distances = distances[:-1]
         
             if len(distances) == 64:
+
+                # Umwandlung der Daten in ein 8*8-Format
                 my_sensor_data = np.array(distances).reshape((8, 8))
                 block_size_x = sensor_data.shape[1] // 8
                 block_size_y = sensor_data.shape[0] // 8
@@ -37,15 +54,17 @@ def get_sensor_data(timestamp):
                 for i in range(8):
                     for j in range(8):
                         value = my_sensor_data[i, j]
+
+                        # Störwerte rausfiltern
                         if value > 2000 or value == 0:
                             value = 0
                             my_sensor_data[i, j] = 0
                         else: 
-                            value = value / 10
-                            my_sensor_data[i, j] = my_sensor_data[i, j] / 10
-                        color_value = int(value * 255 / 5000)
+
+                        # Farbwert berechnen
+                        color_value = int(value * 255 / 2000)
                         sensor_data[i*block_size_y:(i+1)*block_size_y, j*block_size_x:(j+1)*block_size_x] = [color_value, color_value, color_value]
-                        
+
                         font = cv2.FONT_HERSHEY_SIMPLEX
                         font_scale = 0.5  
                         font_color = (255-color_value, 255-color_value, 255-color_value) 
@@ -59,16 +78,20 @@ def get_sensor_data(timestamp):
 
                        
                         cv2.putText(sensor_data, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
+                        
                 matritzen.append(my_sensor_data.flatten())
-                    # Überprüfe, ob die Queue 20 Matrizen enthält
+                # Überprüfe, ob die Queue 20 Matrizen enthält
                 if len(matritzen) == 20:
-                        # Konvertiere die Queue in eine Zeile für die CSV-Datei
-                    #row = np.concatenate(matritzen).astype(str).tolist()
+                        
                     row = np.concatenate(matritzen)
                     new_sample_scaled = scaler.transform(row.reshape(1, -1))  # Reshape zu (1, 1280)
+
+                    
                     # Reshape für das RNN-Modell
                     new_sample_scaled = new_sample_scaled.reshape(1, 20, 64)
-                    #print(len(row))
+
+
+                    # Modellprediction erhalten und ausgeben
                     prediction = model.predict(new_sample_scaled,verbose=0)
                     predicted_class = (prediction > 0.5).astype(int)
                     #print(predicted_class) 
@@ -76,10 +99,6 @@ def get_sensor_data(timestamp):
 
                     
                     matritzen.pop(0)
-                #durchschnitt_neue_matrix_skaliert = scaler.transform([matrix])
-                #print(model.predict(durchschnitt_neue_matrix_skaliert))
-                
-                
                 
                             
     except Exception as e:
@@ -88,21 +107,22 @@ def get_sensor_data(timestamp):
     return sensor_data
 
 # Initialisieren der Kamera
+# Ggfs. Zahl anpassen, wenn keine Webcam genutzt wird
 cap = cv2.VideoCapture(1)
 
 
 while True:
 
+    # Zeitstempel erhalten
     now = datetime.now()
     timestamp = now.strftime("%H:%M:%S") + ".{:03d}".format(int(now.microsecond / 1000))
 
+    # Kamerabild
     ret, camera_frame = cap.read()
+
+    # Sensorbild
     sensor_frame = get_sensor_data(timestamp)
     
-
-    #Einfügen des Timestamps in das Kamerabild
-    cv2.putText(camera_frame, timestamp, (10, camera_frame.shape[0] - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
     
     #Einfügen des Timestamps in das Sensorbild
     cv2.putText(sensor_frame, timestamp, (10, sensor_frame.shape[0] - 10),
@@ -115,7 +135,8 @@ while True:
 
     
     cv2.imshow('Camera and Sensor Data', combined_frame)
-    
+
+    # Beenden des Skrips mit 'q'
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 cap.release()
