@@ -93,6 +93,8 @@ void setup()
   sensor_vl53l8cx_top.init_sensor();
   Serial.println("Sensor initialized");
 
+
+  // Hier kann der Ranging Mode gesetzt werden
   // sensor_vl53l8cx_top.vl53l8cx_set_ranging_mode(VL53L8CX_RANGING_MODE_AUTONOMOUS);
   // if (status) {
   //   snprintf(report, sizeof(report), "vl53l5cx_set_ranging_mode failed, status %u\r\n", status);
