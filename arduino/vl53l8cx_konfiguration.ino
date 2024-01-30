@@ -1,3 +1,8 @@
+
+// Dieses Skript stammt aus der vl53l8cx-Library und wurde für diese Arbeit nur angepasst.
+// Das ursprüngliche Skript ist unter folgendem Link zu finden: https://reference.arduino.cc/reference/en/libraries/stm32duino-vl53l8cx/
+
+
 /*
  * To use these examples you need to connect the VL53L8CX satellite sensor directly to the Nucleo board with wires as explained below:
  * pin 1 (SPI_I2C_n) of the VL53L8CX satellite connected to pin GND of the Nucleo board
