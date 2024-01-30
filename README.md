@@ -1,7 +1,7 @@
 # Bachelorarbeit
 
 
-# Für viele der Skrips ist eine Videokamera und der VL53L8CX-Sensor notwendig
+Für viele der Skrips ist eine Videokamera und der VL53L8CX-Sensor notwendig
 
 testSensorConfig: Testen der aktuellen Sensorkonfiguration
 
